@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#170e2c">
+<meta name="description" content="Cuatro preguntitas de Josesito y una sorpresa.">
+<meta name="robots" content="noindex, nofollow">
+<title>¿Amas a Josesito?</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --ink: #fff5fc;
+    --muted: #dcc2e0;
+    --pink: #ffb4df;
+    --night: #170e2c;
+    font-family: ui-rounded, "Avenir Next", "Trebuchet MS", sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    min-height: 100svh; margin: 0; color: var(--ink);
+    background: radial-gradient(ellipse at 50% 37%, #552957 0%, transparent 46%),
+      radial-gradient(ellipse at 83% 91%, #432240 0%, transparent 45%),
+      linear-gradient(146deg, #100b23, var(--night) 56%, #220e2e);
+  }
+  .sky, .effects { position: fixed; inset: 0; overflow: hidden; pointer-events: none; }
+  .sky::after {
+    content: ""; position: absolute; inset: 0; opacity: .55;
+    background-image: radial-gradient(circle, #ffd8ef 0 1px, transparent 1.6px),
+      radial-gradient(circle, #b9a8ff 0 1px, transparent 1.8px);
+    background-size: 139px 113px, 173px 157px;
+    background-position: 14px 9px, 76px 50px;
+    mask-image: radial-gradient(ellipse, transparent 20%, #000 78%);
+  }
+  .bubble {
+    position: absolute; left: var(--x); top: var(--y); width: var(--size);
+    aspect-ratio: 1; border-radius: 50%; opacity: .72;
+    background: radial-gradient(ellipse at 30% 22%, #ffd1ffab, transparent 18%),
+      radial-gradient(ellipse at 72% 76%, #d67ba34f, transparent 45%),
+      radial-gradient(ellipse at 52% 55%, transparent 49%, #c5a0ff53 80%);
+    border: 1px solid #e0bbff60;
+    box-shadow: inset 0 -5px 18px #b1a1ff45, 0 0 26px #fa92fc1a;
+    animation: drift var(--speed) ease-in-out var(--delay) infinite alternate;
+  }
+  @keyframes drift { to { transform: translate(15px, -28px) rotate(15deg); } }
+  .game {
+    position: relative; width: min(100%, 49rem); min-height: 100svh; margin: auto;
+    padding: max(1.2rem, env(safe-area-inset-top)) 1.25rem max(1rem, env(safe-area-inset-bottom));
+    display: grid; grid-template-rows: auto 1fr auto;
+  }
+  header { display: flex; align-items: center; justify-content: space-between; gap: .65rem; }
+  .brand { color: #ffdaef; font-size: .875rem; font-weight: 700; letter-spacing: .08em; }
+  .brand span { color: #ff8ac5; margin-right: .35rem; }
+  button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
+  button:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
+  .sound {
+    font-size: .875rem; flex: none; min-height: 2.75rem; padding: .4rem .85rem;
+    background: #fff1; border: 1px solid #ffd9fd38; border-radius: 2rem;
+  }
+  main { align-self: center; text-align: center; padding: 1.1rem 0 .25rem; }
+  .mascot-wrap {
+    display: grid; place-items: center; height: clamp(9rem, 26vh, 14.75rem);
+    margin: 0 auto 1.05rem; position: relative; width: min(100%, 26rem);
+  }
+  .mascot {
+    position: relative; isolation: isolate; display: grid; place-items: center;
+    width: clamp(8.5rem, 24vh, 13rem); aspect-ratio: 1; border-radius: 50%;
+    background: radial-gradient(ellipse at 23% 19%, #fff4ffab, transparent 21%),
+      radial-gradient(ellipse at 76% 83%, #ff93c897, transparent 40%),
+      radial-gradient(circle, #d18afe24 32%, #a785ff70 75%, #fff1f8bd 100%);
+    border: 1px solid #ffebffc7;
+    box-shadow: inset 0 -5px 25px #fdb4fc51, 0 0 42px #ff91d862, 0 0 90px #e792ff36;
+    animation: float 4.4s ease-in-out infinite;
+  }
+  .mascot::after {
+    content: ""; position: absolute; width: 23%; height: 8%; border-radius: 50%;
+    background: #fff0ffba; left: 17%; top: 16%; transform: rotate(-37deg); filter: blur(1.5px);
+  }
+  .mascot-wrap.is-finale {
+    width: 100%; height: auto; margin-bottom: 1.45rem;
+  }
+  .kiss-bubble {
+    position: relative; isolation: isolate; display: grid; place-items: center;
+    width: min(21rem, 84vw, 52svh); aspect-ratio: 1; overflow: hidden;
+    border-radius: 50%; border: 2px solid #fff0ffc9; background: #392041;
+    box-shadow: 0 0 38px #ff9dda8c, 0 0 90px #cf7dff4d;
+    animation: arrive .9s cubic-bezier(.22, .85, .33, 1.15) both;
+  }
+  .kiss-bubble::after {
+    content: ""; pointer-events: none; position: absolute; inset: 0; border-radius: inherit;
+    background: radial-gradient(ellipse at 23% 20%, #fff4ff9c, transparent 18%),
+      radial-gradient(circle, transparent 45%, #dd94fb32 65%, #ffc7f17d 100%);
+    box-shadow: inset 0 0 18px #ffdfff65;
+  }
+  .kiss-bubble video {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  }
+  @keyframes arrive {
+    from { opacity: 0; transform: translate(13vw, 19vh) scale(.42) rotate(15deg); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes float { 50% { transform: translateY(-8px); } }
+  .character { position: relative; display: block; width: 72%; aspect-ratio: 1; }
+  .heart { width: 100%; display: block; overflow: visible; filter: drop-shadow(0 6px 7px #8e205f7a); }
+  .face { fill: #63244c; }
+  .smile, .frown { fill: none; stroke: #63244c; stroke-width: 2.3; stroke-linecap: round; }
+  .frown, .tear, .happy-eyes { display: none; }
+  body[data-mood="sad"] .smile, body[data-mood="joy"] .eyes { display: none; }
+  body[data-mood="sad"] :is(.frown, .tear), body[data-mood="joy"] .happy-eyes { display: initial; }
+  body[data-mood="sad"] .mascot { filter: saturate(.72) hue-rotate(11deg); }
+  body[data-mood="joy"] .mascot { box-shadow: inset 0 -5px 25px #ffcced99, 0 0 65px #fa90debf, 0 0 110px #e792ff50; }
+  .spark { position: absolute; color: #ffd6f0; text-shadow: 0 0 12px #ff8de5; animation: glow 2.7s ease-in-out infinite alternate; }
+  .spark.a { left: 13%; top: 30%; font-size: 1.4rem; }
+  .spark.b { right: 12%; top: 17%; font-size: 2rem; animation-delay: -.9s; }
+  .spark.c { right: 19%; bottom: 9%; font-size: .95rem; animation-delay: -1.8s; }
+  @keyframes glow { to { opacity: .45; transform: scale(.78); } }
+  .step {
+    margin: 0 auto .7rem; padding: 0; display: flex; justify-content: center;
+    gap: .4rem; list-style: none;
+  }
+  .step li { width: .46rem; height: .46rem; border-radius: 2rem; background: #986b9d; }
+  .step li[data-done] { background: #eb91c4; }
+  .step li[aria-current] { width: 1.35rem; background: #ffd1ed; box-shadow: 0 0 12px #ff91dd9a; }
+  .screen { animation: enter .36s ease-out both; }
+  @keyframes enter { from { opacity: 0; transform: translateY(8px); } }
+  h1 {
+    margin: 0 auto; max-width: 15ch; text-wrap: balance; outline: none;
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-size: clamp(2.2rem, 7.8vw, 4.55rem); font-weight: 500; line-height: 1; letter-spacing: -.05em;
+  }
+  h1 em { color: var(--pink); font-style: italic; }
+  .buttons {
+    position: relative; display: flex; justify-content: center; align-items: start; flex-wrap: wrap;
+    gap: .6rem; margin: 1rem auto 0; width: min(100%, 28rem); min-height: 3.25rem;
+  }
+  .answer {
+    background: #f7ceff16; border: 1px solid #f4c5f951; border-radius: 10rem;
+    min-height: 3.1rem; padding: .63rem 1.22rem; font-weight: 750;
+    transition: background .16s, transform .16s;
+  }
+  .answer:hover { background: #f7ceff30; transform: translateY(-2px); }
+  .answer.major { background: linear-gradient(115deg, #ffd2ed, #f6a6d7); color: #36132f; border-color: #ffe5f8; box-shadow: 0 6px 25px #ec6dac33; }
+  .answer.major:hover { background: #ffe0f3; }
+  .answer.escaped {
+    position: fixed; z-index: 2; left: var(--left); top: var(--top);
+    background: #462752; box-shadow: 0 4px 22px #f183d953;
+  }
+  .answer.escaped:hover { background: #55305e; transform: none; }
+  .buttons.has-escaped::after { content: ""; flex-basis: var(--ghost); height: 3.1rem; }
+  footer { text-align: center; color: var(--muted); font-size: .875rem; padding-top: .6rem; }
+  .particle {
+    position: absolute; color: var(--color); font-size: var(--size);
+    left: var(--x); top: var(--y); animation: burst .95s ease-out both;
+    text-shadow: 0 0 10px #ff93d9;
+  }
+  @keyframes burst {
+    from { opacity: 1; transform: translate(-50%, -50%) scale(.5); }
+    to { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--spin)); }
+  }
+  @media(max-width: 440px) {
+    .game { padding-inline: .9rem; }
+    .brand { letter-spacing: .045em; }
+    .answer { padding-inline: .9rem; }
+    .spark.a { left: 10%; }
+    .spark.b { right: 9%; }
+  }
+  @media(prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="sky" aria-hidden="true"></div>
+<div class="effects" aria-hidden="true"></div>
+<div class="game">
+  <header>
+    <div class="brand"><span aria-hidden="true">♥</span> Las burbujas de Josesito</div>
+    <button class="sound" type="button" aria-pressed="false">♪ Sonido no</button>
+  </header>
+  <main>
+    <div class="mascot-wrap">
+      <span class="spark a" aria-hidden="true">✧</span><span class="spark b" aria-hidden="true">✦</span><span class="spark c" aria-hidden="true">✧</span>
+      <div class="mascot" aria-hidden="true">
+        <span class="character">
+          <svg class="heart" viewBox="0 0 100 100">
+            <defs>
+              <linearGradient id="heart-fill" x1="0%" y1="0%" x2="65%" y2="100%">
+                <stop stop-color="#ffe0f3"/><stop offset=".42" stop-color="#ff8fc4"/><stop offset="1" stop-color="#e84594"/>
+              </linearGradient>
+            </defs>
+            <path fill="url(#heart-fill)" stroke="#ffd5ed" stroke-width="1.4"
+              d="M50 87C45 83 9 60 8 36 7 16 30 10 42 20c4 3 6 6 8 9 2-3 4-6 8-9 12-10 35-4 34 16-1 24-37 47-42 51Z"/>
+            <path d="M17 32q3-10 12-11" stroke="#fff4fa" stroke-width="3" stroke-linecap="round" fill="none" opacity=".82"/>
+            <g class="face">
+              <g class="eyes"><ellipse cx="38" cy="45" rx="2.6" ry="3.6"/><ellipse cx="62" cy="45" rx="2.6" ry="3.6"/></g>
+              <path class="happy-eyes" d="M33 46q5-7 10 0m14 0q5-7 10 0" fill="none" stroke="#63244c" stroke-width="2.4" stroke-linecap="round"/>
+              <path class="smile" d="M45 52q5 7 10 0"/><path class="frown" d="M45 57q5-6 10 0"/>
+              <path class="tear" fill="#b9eeff" d="M66 50q-6 7-2 10c5 2 7-3 2-10Z"/>
+              <ellipse cx="30" cy="53" rx="4.5" ry="2.3" fill="#f867a4"/><ellipse cx="70" cy="53" rx="4.5" ry="2.3" fill="#f867a4"/>
+            </g>
+          </svg>
+        </span>
+      </div>
+      <div class="kiss-bubble" hidden>
+        <video src="./besito.mp4" preload="metadata" playsinline muted aria-label="Josesito mandándote un besito"></video>
+      </div>
+    </div>
+    <ol class="step" aria-label="Progreso" hidden></ol>
+    <section class="screen">
+      <h1 tabindex="-1">Hola idiota. ¿Quieres a tu <em>Josesito</em>?</h1>
+    </section>
+    <div class="buttons">
+      <button class="answer major" id="primary" type="button">Sí, lo quiero</button>
+      <button class="answer" id="secondary" type="button">No</button>
+      <button class="answer" id="video-control" type="button" hidden>Ver el besito</button>
+    </div>
+    <noscript><p>Activa JavaScript en tu navegador para jugar.</p></noscript>
+  </main>
+  <footer>Con cariño, José ♡</footer>
+</div>
+<script>
+  const sky = document.querySelector('.sky');
+  const effects = document.querySelector('.effects');
+  const screen = document.querySelector('.screen');
+  const title = document.querySelector('h1');
+  const steps = document.querySelector('.step');
+  const buttons = document.querySelector('.buttons');
+  const primary = document.querySelector('#primary');
+  const secondary = document.querySelector('#secondary');
+  const sound = document.querySelector('.sound');
+  const mascotWrap = document.querySelector('.mascot-wrap');
+  const mascot = document.querySelector('.mascot');
+  const kissBubble = document.querySelector('.kiss-bubble');
+  const video = kissBubble.querySelector('video');
+  const videoControl = document.querySelector('#video-control');
+  const motion = matchMedia('(prefers-reduced-motion: reduce)');
+  const bubbles = [
+    [8, 21, 85], [87, 18, 53], [76, 34, 44], [-6, 58, 143],
+    [90, 60, 126], [18, 79, 46], [74, 83, 71], [37, 8, 22],
+    [62, 10, 29], [28, 35, 21], [80, 71, 26], [5, 92, 36]
+  ];
+  bubbles.forEach(([x, y, size], index) => {
+    const bubble = document.createElement('i');
+    bubble.className = 'bubble';
+    bubble.style.cssText = `--x:${x}%;--y:${y}%;--size:${size}px;--speed:${4 + index % 5}s;--delay:${-index / 2}s`;
+    sky.append(bubble);
+  });
+  const questions = [
+    { title: 'Hola idiota. ¿Quieres a tu <em>Josesito</em>?', primary: 'Sí, lo quiero', secondary: 'No' },
+    { title: '¿Amas a tu <em>chiri</em>?', primary: 'Sí, lo amo ♡', secondary: 'No' },
+    { title: '¿Quieres dejar a <em>Josesito</em>?', primary: 'No', secondary: 'Sí' },
+    { title: '¿Todavía quieres dejar a <em>Josesito</em>?', primary: 'No, ven acá ♡', secondary: 'Sí' }
+  ];
+  const ending = { title: 'Te quiero, <em>mi amor</em> ♡', primary: 'Jugar otra vez' };
+  const protectedControls = [title, primary, sound];
+  let state = 0;
+  let flight;
+  let soundOn = false;
+  let audio;
+
+  function play(notes) {
+    if (!soundOn || !audio || audio.state !== 'running') return;
+    notes.forEach((frequency, index) => {
+      const start = audio.currentTime + index * .105;
+      const note = audio.createOscillator();
+      const gain = audio.createGain();
+      note.type = 'sine';
+      note.frequency.value = frequency;
+      gain.gain.setValueAtTime(.0001, start);
+      gain.gain.exponentialRampToValueAtTime(.07, start + .016);
+      gain.gain.exponentialRampToValueAtTime(.0001, start + .32);
+      note.connect(gain).connect(audio.destination);
+      note.start(start);
+      note.stop(start + .33);
+    });
+  }
+
+  sound.addEventListener('click', async () => {
+    const Audio = window.AudioContext || window.webkitAudioContext;
+    if (!Audio) { sound.hidden = true; return; }
+    soundOn = !soundOn;
+    if (soundOn) {
+      try { audio ||= new Audio(); await audio.resume(); } catch { soundOn = false; }
+    }
+    sound.textContent = soundOn ? '♪ Sonido sí' : '♪ Sonido no';
+    sound.setAttribute('aria-pressed', String(soundOn));
+    video.muted = !soundOn;
+    play([587, 784]);
+  });
+
+  function updateVideoControl() {
+    videoControl.textContent = video.error ? 'Abrir el video' : video.ended
+      ? 'Ver el besito otra vez' : video.paused ? 'Ver el besito' : 'Pausar video';
+  }
+
+  function playKiss() {
+    video.play().catch(updateVideoControl);
+  }
+
+  for (const event of ['play', 'pause', 'ended', 'error']) {
+    video.addEventListener(event, updateVideoControl);
+  }
+
+  videoControl.addEventListener('click', () => {
+    if (video.error) { location.href = video.src; return; }
+    if (video.paused || video.ended) {
+      if (video.ended) video.currentTime = 0;
+      playKiss();
+    } else video.pause();
+  });
+
+  function burst(symbols, count) {
+    if (motion.matches) return;
+    const origin = (kissBubble.hidden ? mascot : kissBubble).getBoundingClientRect();
+    const colors = ['#ffe2a9', '#ff91c9', '#ffd7ed', '#ddc4ff', '#ffffff'];
+    for (let index = 0; index < count; index++) {
+      const particle = document.createElement('span');
+      const angle = index * Math.PI * 2 / count;
+      const distance = 53 + Math.random() * Math.min(170, innerWidth / 3);
+      particle.textContent = symbols[index % symbols.length];
+      particle.className = 'particle';
+      particle.style.cssText = `
+        --x:${origin.x + origin.width / 2}px;--y:${origin.y + origin.height / 2}px;
+        --dx:${Math.cos(angle) * distance}px;--dy:${Math.sin(angle) * distance}px;
+        --spin:${index % 2 ? 160 : -160}deg;--color:${colors[index % colors.length]};
+        --size:${14 + Math.random() * 18}px`;
+      effects.append(particle);
+      setTimeout(() => particle.remove(), 1000);
+    }
+  }
+
+  function show(next, mood = '', focus = true) {
+    state = next;
+    const scene = questions[state] ?? ending;
+    const finale = state === questions.length;
+    flight?.cancel();
+    mascotWrap.classList.toggle('is-finale', finale);
+    mascot.hidden = finale;
+    kissBubble.hidden = !finale;
+    videoControl.hidden = !finale;
+    if (finale) {
+      playKiss();
+    } else if (!video.paused || video.currentTime > 0) {
+      video.pause();
+      video.currentTime = 0;
+    }
+    document.body.dataset.mood = mood;
+    title.innerHTML = scene.title;
+    primary.textContent = scene.primary;
+    secondary.textContent = scene.secondary ?? '';
+    secondary.hidden = !scene.secondary;
+    secondary.classList.remove('escaped');
+    buttons.classList.remove('has-escaped');
+    steps.replaceChildren();
+    steps.hidden = state === questions.length;
+    if (!steps.hidden) {
+      steps.setAttribute('aria-label', `Pregunta ${state + 1} de ${questions.length}`);
+      for (let i = 0; i < questions.length; i++) {
+        const dot = document.createElement('li');
+        if (i === state) dot.setAttribute('aria-current', 'step');
+        if (i < state) dot.dataset.done = '';
+        steps.append(dot);
+      }
+    }
+    screen.classList.remove('screen');
+    void screen.offsetWidth;
+    screen.classList.add('screen');
+    if (focus) title.focus({ preventScroll: true });
+  }
+
+  function moveButton(animate = true) {
+    const start = secondary.getBoundingClientRect();
+    flight?.cancel();
+    const { width, height } = start;
+    const padding = 12;
+    const availableX = Math.max(0, document.documentElement.clientWidth - width - 2 * padding);
+    const availableY = Math.max(0, document.documentElement.clientHeight - height - 2 * padding);
+    buttons.style.setProperty('--ghost', `${width}px`);
+    buttons.classList.add('has-escaped');
+    secondary.classList.add('escaped');
+    const obstacles = protectedControls.map(control => control.getBoundingClientRect());
+    const spots = [];
+    for (const horizontal of [0, .25, .5, .75, 1]) {
+      for (const vertical of [0, .25, .5, .75, 1]) {
+        const left = padding + (horizontal + Math.random() * .08 * (1 - horizontal)) * availableX;
+        const top = padding + (vertical + Math.random() * .08 * (1 - vertical)) * availableY;
+        const clear = obstacles.every(rect => left + width + 8 < rect.left ||
+          left - 8 > rect.right || top + height + 8 < rect.top || top - 8 > rect.bottom);
+        if (clear) spots.push({ left, top, distance: Math.hypot(left - start.left, top - start.top) });
+      }
+    }
+    spots.sort((a, b) => b.distance - a.distance);
+    const target = spots[Math.floor(Math.random() * Math.min(spots.length, 8))] ??
+      { left: padding + (start.left < padding + availableX / 2 ? availableX : 0), top: padding };
+    secondary.style.setProperty('--left', `${target.left}px`);
+    secondary.style.setProperty('--top', `${target.top}px`);
+    if (animate && !motion.matches) {
+      flight = secondary.animate([
+        { transform: `translate(${start.left - target.left}px, ${start.top - target.top}px)` },
+        { transform: 'none' }
+      ], { duration: 185, easing: 'cubic-bezier(.19, 1, .22, 1)' });
+    }
+  }
+
+  primary.addEventListener('click', () => {
+    if (state === questions.length) { show(0); return; }
+    show(state + 1, 'joy');
+    const celebrate = state === 2 || state === questions.length;
+    burst(['♥', '✦', '✧'], celebrate ? 36 : 15);
+    play(celebrate ? [523, 659, 784, 1047] : [523, 659, 784]);
+  });
+  secondary.addEventListener('click', () => {
+    moveButton();
+    document.body.dataset.mood = 'sad';
+    burst(['○', '◌', '🫧'], 10);
+    play([659, 523]);
+  });
+  addEventListener('resize', () => {
+    if (secondary.classList.contains('escaped')) moveButton(false);
+  });
+  show(0, '', false);
+</script>
+</body>
+</html>
