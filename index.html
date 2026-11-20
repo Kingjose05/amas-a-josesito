@@ -47,17 +47,13 @@
   .game {
     position: relative; width: min(100%, 49rem); min-height: 100svh; margin: auto;
     padding: max(1.2rem, env(safe-area-inset-top)) 1.25rem max(1rem, env(safe-area-inset-bottom));
-    display: grid; grid-template-rows: auto 1fr auto;
+    display: grid; grid-template-rows: auto 1fr;
   }
   header { display: flex; align-items: center; justify-content: space-between; gap: .65rem; }
   .brand { color: #ffdaef; font-size: .875rem; font-weight: 700; letter-spacing: .08em; }
   .brand span { color: #ff8ac5; margin-right: .35rem; }
   button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
   button:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
-  .sound {
-    font-size: .875rem; flex: none; min-height: 2.75rem; padding: .4rem .85rem;
-    background: #fff1; border: 1px solid #ffd9fd38; border-radius: 2rem;
-  }
   main { align-self: center; text-align: center; padding: 1.1rem 0 .25rem; }
   .mascot-wrap {
     display: grid; place-items: center; height: clamp(9rem, 26vh, 14.75rem);
@@ -148,7 +144,6 @@
   }
   .answer.escaped:hover { background: #55305e; transform: none; }
   .buttons.has-escaped::after { content: ""; flex-basis: var(--ghost); height: 3.1rem; }
-  footer { text-align: center; color: var(--muted); font-size: .875rem; padding-top: .6rem; }
   .particle {
     position: absolute; color: var(--color); font-size: var(--size);
     left: var(--x); top: var(--y); animation: burst .95s ease-out both;
@@ -176,7 +171,6 @@
 <div class="game">
   <header>
     <div class="brand"><span aria-hidden="true">♥</span> Las burbujas de Josesito</div>
-    <button class="sound" type="button" aria-pressed="false">♪ Sonido no</button>
   </header>
   <main>
     <div class="mascot-wrap">
@@ -203,7 +197,7 @@
         </span>
       </div>
       <div class="kiss-bubble" hidden>
-        <video src="./besito.mp4" preload="metadata" playsinline muted aria-label="Josesito mandándote un besito"></video>
+        <video src="./besito.mp4" preload="metadata" playsinline aria-label="Josesito mandándote un besito"></video>
       </div>
     </div>
     <ol class="step" aria-label="Progreso" hidden></ol>
@@ -217,7 +211,6 @@
     </div>
     <noscript><p>Activa JavaScript en tu navegador para jugar.</p></noscript>
   </main>
-  <footer>Con cariño, José ♡</footer>
 </div>
 <script>
   const sky = document.querySelector('.sky');
@@ -228,7 +221,6 @@
   const buttons = document.querySelector('.buttons');
   const primary = document.querySelector('#primary');
   const secondary = document.querySelector('#secondary');
-  const sound = document.querySelector('.sound');
   const mascotWrap = document.querySelector('.mascot-wrap');
   const mascot = document.querySelector('.mascot');
   const kissBubble = document.querySelector('.kiss-bubble');
@@ -253,14 +245,20 @@
     { title: '¿Todavía quieres dejar a <em>Josesito</em>?', primary: 'No, ven acá ♡', secondary: 'Sí' }
   ];
   const ending = { title: 'mua, <em>idiota</em>', primary: 'Jugar otra vez' };
-  const protectedControls = [title, primary, sound];
+  const protectedControls = [title, primary];
   let state = 0;
   let flight;
-  let soundOn = false;
   let audio;
 
-  function play(notes) {
-    if (!soundOn || !audio || audio.state !== 'running') return;
+  async function play(notes) {
+    const Audio = window.AudioContext || window.webkitAudioContext;
+    if (!Audio) return;
+    try {
+      audio ||= new Audio();
+      if (audio.state !== 'running') await audio.resume();
+    } catch {
+      return;
+    }
     notes.forEach((frequency, index) => {
       const start = audio.currentTime + index * .105;
       const note = audio.createOscillator();
@@ -275,19 +273,6 @@
       note.stop(start + .33);
     });
   }
-
-  sound.addEventListener('click', async () => {
-    const Audio = window.AudioContext || window.webkitAudioContext;
-    if (!Audio) { sound.hidden = true; return; }
-    soundOn = !soundOn;
-    if (soundOn) {
-      try { audio ||= new Audio(); await audio.resume(); } catch { soundOn = false; }
-    }
-    sound.textContent = soundOn ? '♪ Sonido sí' : '♪ Sonido no';
-    sound.setAttribute('aria-pressed', String(soundOn));
-    video.muted = !soundOn;
-    play([587, 784]);
-  });
 
   function updateVideoControl() {
     videoControl.textContent = video.error ? 'Abrir el video' : video.ended
@@ -408,7 +393,7 @@
     show(state + 1, 'joy');
     const celebrate = state === 2 || state === questions.length;
     burst(['♥', '✦', '✧'], celebrate ? 36 : 15);
-    play(celebrate ? [523, 659, 784, 1047] : [523, 659, 784]);
+    if (state !== questions.length) play(celebrate ? [523, 659, 784, 1047] : [523, 659, 784]);
   });
   secondary.addEventListener('click', () => {
     moveButton();
