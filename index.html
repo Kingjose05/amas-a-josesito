@@ -138,6 +138,16 @@
   .answer:hover { background: #f7ceff30; transform: translateY(-2px); }
   .answer.major { background: linear-gradient(115deg, #ffd2ed, #f6a6d7); color: #36132f; border-color: #ffe5f8; box-shadow: 0 6px 25px #ec6dac33; }
   .answer.major:hover { background: #ffe0f3; }
+  .arcade-link {
+    position: fixed; z-index: 3;
+    right: max(.75rem, env(safe-area-inset-right));
+    bottom: max(.65rem, env(safe-area-inset-bottom));
+    border: 1px solid #ffcaef40; border-radius: 2rem;
+    background: #271437; color: #ffdaef; padding: .65rem .8rem;
+    font-size: .875rem; line-height: 1.2; text-decoration: none;
+    animation: enter .5s ease-out both;
+  }
+  .arcade-link:hover, .arcade-link:focus-visible { color: #fff; border-color: #ffcaef; }
   .answer.escaped {
     position: fixed; z-index: 2; left: var(--left); top: var(--top);
     background: #462752; box-shadow: 0 4px 22px #f183d953;
@@ -211,6 +221,7 @@
     </div>
     <noscript><p>Activa JavaScript en tu navegador para jugar.</p></noscript>
   </main>
+  <a class="arcade-link" href="./noemimonster.html" hidden>jugar noemimonster</a>
 </div>
 <script>
   const sky = document.querySelector('.sky');
@@ -226,6 +237,7 @@
   const kissBubble = document.querySelector('.kiss-bubble');
   const video = kissBubble.querySelector('video');
   const videoControl = document.querySelector('#video-control');
+  const arcadeLink = document.querySelector('.arcade-link');
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   const bubbles = [
     [8, 21, 85], [87, 18, 53], [76, 34, 44], [-6, 58, 143],
@@ -324,6 +336,7 @@
     mascot.hidden = finale;
     kissBubble.hidden = !finale;
     videoControl.hidden = !finale;
+    arcadeLink.hidden = !finale;
     if (finale) {
       playKiss();
     } else if (!video.paused || video.currentTime > 0) {

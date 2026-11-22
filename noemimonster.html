@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1b1026">
+  <meta name="robots" content="noindex, nofollow">
+  <title>NoemiMonster</title>
+  <link rel="stylesheet" href="./noemimonster.css">
+  <script src="./noemimonster.js" defer></script>
+</head>
+<body>
+  <main class="arcade">
+    <header class="masthead">
+      <a class="return" href="./">Volver a las burbujas</a>
+      <h1>Noemi<span>Monster</span></h1>
+    </header>
+    <div class="hud">
+      <div><span>Ronda</span><strong id="round">1 / 2</strong></div>
+      <div><span>Bloques</span><strong id="remaining">24</strong></div>
+      <div><span>Bolitas</span><strong id="count">1</strong></div>
+      <button id="pause" type="button" hidden>Pausar</button>
+    </div>
+    <section class="arena" aria-label="Tablero de NoemiMonster">
+      <canvas width="420" height="560" aria-label="Desliza a Noemí o usa las flechas para rebotar las bolitas con su frente."></canvas>
+      <div class="overlay" id="overlay">
+        <div class="panel">
+          <h2 id="cue" tabindex="-1">La frente al rescate</h2>
+          <p id="hint">Desliza a Noemí y rompe todos los bloques.</p>
+          <button id="action" type="button">Lanzar bolita</button>
+        </div>
+      </div>
+    </section>
+    <p class="help">Desliza a Noemí o usa <kbd>←</kbd> <kbd>→</kbd></p>
+    <p class="sr-only" id="announcement" role="status"></p>
+    <noscript><p>Activa JavaScript para jugar.</p></noscript>
+  </main>
+</body>
+</html>
