@@ -16,19 +16,14 @@ const headWidth = 174;
 const headHeight = 169;
 const headTop = 464;
 const headAnchor = .44;
-// Points along the forehead's hairline in the cropped photo.
-const foreheadProfile = [
-  [.14, .263], [.21, .18], [.31, .117], [.44, .087],
-  [.55, .095], [.65, .143], [.74, .23]
-];
-const foreheadHalfWidth = .30 * headWidth;
 const ballRadius = 12;
+const headHitRadius = 14;
+const spawnY = headTop - 9;
 const fixedStep = 1 / 180;
 const maxBalls = 5;
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const paddlePhoto = new Image();
 const kissPhoto = new Image();
-paddlePhoto.src = './noemi.webp';
 kissPhoto.src = './besito-frizado.jpg';
 const palette = [
   ['#ff91b9', '#7b284c'], ['#ffbd74', '#79402e'],
@@ -50,25 +45,106 @@ let remaining = 0;
 let tiles = [];
 let balls = [];
 let paddle = width / 2;
+let previousPaddle = paddle;
+let headOutline = [];
+let headLeft = 0;
+let headRight = 0;
 let pointer = null;
 let mode = 'ready';
 let audio;
 
 function clamp(n, min, max) { return Math.max(min, Math.min(n, max)); }
-function aim(x) { paddle = clamp(x, foreheadHalfWidth + 3, width - foreheadHalfWidth - 3); }
+function aim(x) {
+  const margin = headHitRadius + ballRadius + 1;
+  paddle = clamp(x, margin - headLeft, width - margin - headRight);
+}
 
-function foreheadY(x) {
-  const photoX = (x - paddle) / headWidth + headAnchor;
-  if (photoX < foreheadProfile[0][0]) return null;
-  for (let i = 1; i < foreheadProfile.length; i++) {
-    const [left, leftY] = foreheadProfile[i - 1];
-    const [right, rightY] = foreheadProfile[i];
-    if (photoX <= right) {
-      const height = leftY + (rightY - leftY) * (photoX - left) / (right - left);
-      return headTop + height * headHeight;
+function traceHead() {
+  const mask = document.createElement('canvas');
+  mask.width = headWidth;
+  mask.height = height - headTop + headHitRadius + 2;
+  const pixels = mask.getContext('2d');
+  pixels.drawImage(paddlePhoto, 0, 0, headWidth, headHeight);
+  const { data } = pixels.getImageData(0, 0, mask.width, mask.height);
+  const left = [];
+  const right = [];
+  const offset = headWidth * headAnchor;
+  for (let y = 0; y < mask.height; y += 2) {
+    let first = -1;
+    let last = -1;
+    for (let x = 0; x < mask.width; x++) {
+      if (data[(y * mask.width + x) * 4 + 3] < 128) continue;
+      if (first < 0) first = x;
+      last = x;
     }
+    if (first < 0) continue;
+    left.push({ x: first - offset, y: headTop + y });
+    right.push({ x: last + 1 - offset, y: headTop + y });
   }
-  return null;
+  headOutline = left.concat(right.reverse());
+  headLeft = Math.min(...headOutline.map(point => point.x));
+  headRight = Math.max(...headOutline.map(point => point.x));
+  aim(paddle);
+}
+paddlePhoto.addEventListener('load', traceHead);
+paddlePhoto.src = './noemi.webp';
+
+function headContact(ball) {
+  const x = ball.x - paddle;
+  const y = ball.y;
+  if (!headOutline.length || y < headTop - headHitRadius || y >= height ||
+      x < headLeft - headHitRadius || x > headRight + headHitRadius) return null;
+
+  let inside = false;
+  let nearest;
+  let distanceSquared = Infinity;
+  for (let i = 0; i < headOutline.length; i++) {
+    const a = headOutline[i];
+    const b = headOutline[(i + 1) % headOutline.length];
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const lengthSquared = dx * dx + dy * dy;
+    if (!lengthSquared) continue;
+    if ((a.y > y) !== (b.y > y) && x < a.x + dx * (y - a.y) / dy) inside = !inside;
+    const t = clamp(((x - a.x) * dx + (y - a.y) * dy) / lengthSquared, 0, 1);
+    const px = a.x + t * dx;
+    const py = a.y + t * dy;
+    const d = (x - px) ** 2 + (y - py) ** 2;
+    if (d >= distanceSquared) continue;
+    distanceSquared = d;
+    const length = Math.sqrt(lengthSquared);
+    nearest = { x: px, y: py, nx: -dy / length, ny: dx / length };
+  }
+  if (!nearest || (!inside && distanceSquared > headHitRadius ** 2)) return null;
+  if (!inside && distanceSquared > 0) {
+    const distance = Math.sqrt(distanceSquared);
+    nearest.nx = (x - nearest.x) / distance;
+    nearest.ny = (y - nearest.y) / distance;
+  }
+  return { ...nearest, x: nearest.x + paddle, inside };
+}
+
+function bounceOffHead(ball, paddleSpeed) {
+  const contact = headContact(ball);
+  if (!contact) return;
+  const { x, y, nx, ny, inside } = contact;
+  if (!inside && (ball.vx - paddleSpeed) * nx + ball.vy * ny >= 0) return;
+  const side = x < paddle ? -headLeft : headRight;
+  const angle = clamp((x - paddle) / side, -1, 1) * 1.07;
+  const speed = clamp(Math.hypot(ball.vx, ball.vy) + 9, 365, 480);
+  const gap = headHitRadius + .75;
+  ball.x = x + nx * gap;
+  ball.y = y + ny * gap;
+  ball.vx = Math.sin(angle) * speed;
+  if (Math.abs(ball.vx) < 62) ball.vx = ball.vx < 0 ? -62 : 62;
+  ball.vy = -Math.cos(angle) * speed;
+  const inwardSpeed = ball.vx * nx + ball.vy * ny;
+  if (inwardSpeed < 0) {
+    ball.vx -= 2 * inwardSpeed * nx;
+    ball.vy = -Math.abs(ball.vy - 2 * inwardSpeed * ny);
+  }
+  scatter(x, y, '#ffd2a6', 7);
+  chirp(330, 530, .09, .045);
 }
 
 function chirp(from, to, duration = .12, volume = .055) {
@@ -141,7 +217,7 @@ function launch() {
   }
   if (mode !== 'paused') {
     const vx = paddle > width / 2 ? -138 : 138;
-    balls = [{ x: paddle, y: foreheadY(paddle) - 24, vx, vy: -351, spin: 0 }];
+    balls = [{ x: paddle, y: spawnY, vx, vy: -351, spin: 0 }];
     updateHud();
   }
   setMode('playing');
@@ -188,6 +264,8 @@ function hitTile(tile, ball, previousX, previousY, spawned) {
 function step(dt) {
   const steer = Number(keys.has('ArrowRight')) - Number(keys.has('ArrowLeft'));
   if (steer && mode !== 'paused' && mode !== 'won') aim(paddle + steer * 435 * dt);
+  const paddleSpeed = (paddle - previousPaddle) / dt;
+  previousPaddle = paddle;
 
   for (const p of particles) {
     p.life -= dt;
@@ -213,19 +291,7 @@ function step(dt) {
       ball.y = ballRadius;
       ball.vy = Math.abs(ball.vy);
     }
-    const impactY = ball.vy > 0 ? foreheadY(ball.x) : null;
-    if (impactY !== null && ball.y + ballRadius >= impactY &&
-        previousY + ballRadius <= (foreheadY(previousX) ?? impactY)) {
-      const angle = clamp((ball.x - paddle) / foreheadHalfWidth, -1, 1) * 1.02;
-      const speed = Math.min(480, Math.max(365, Math.hypot(ball.vx, ball.vy) + 9));
-      ball.x = clamp(ball.x, ballRadius, width - ballRadius);
-      ball.y = impactY - ballRadius - .5;
-      ball.vx = Math.sin(angle) * speed;
-      if (Math.abs(ball.vx) < 62) ball.vx = ball.vx < 0 ? -62 : 62;
-      ball.vy = -Math.cos(angle) * speed;
-      scatter(ball.x, impactY, '#ffd2a6', 7);
-      chirp(330, 530, .09, .045);
-    }
+    bounceOffHead(ball, paddleSpeed);
     for (const tile of tiles) {
       if (tile.alive && hitTile(tile, ball, previousX, previousY, spawned)) break;
     }
@@ -365,7 +431,7 @@ function draw() {
   drawPaddle();
   if (balls.length) {
     for (const ball of balls) drawBall(ball);
-  } else if (mode !== 'won') drawBall({ x: paddle, y: foreheadY(paddle) - 24, spin: 0 });
+  } else if (mode !== 'won') drawBall({ x: paddle, y: spawnY, spin: 0 });
   for (const p of particles) {
     ctx.globalAlpha = clamp(p.life * 2.4, 0, 1);
     ctx.fillStyle = p.color;
