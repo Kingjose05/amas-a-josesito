@@ -12,8 +12,16 @@ const countLabel = document.querySelector('#count');
 
 const width = 420;
 const height = 560;
-const paddleY = 490;
-const paddleWidth = 126;
+const headWidth = 174;
+const headHeight = 169;
+const headTop = 464;
+const headAnchor = .44;
+// Points along the forehead's hairline in the cropped photo.
+const foreheadProfile = [
+  [.14, .263], [.21, .18], [.31, .117], [.44, .087],
+  [.55, .095], [.65, .143], [.74, .23]
+];
+const foreheadHalfWidth = .30 * headWidth;
 const ballRadius = 12;
 const fixedStep = 1 / 180;
 const maxBalls = 5;
@@ -47,7 +55,21 @@ let mode = 'ready';
 let audio;
 
 function clamp(n, min, max) { return Math.max(min, Math.min(n, max)); }
-function aim(x) { paddle = clamp(x, paddleWidth / 2 + 3, width - paddleWidth / 2 - 3); }
+function aim(x) { paddle = clamp(x, foreheadHalfWidth + 3, width - foreheadHalfWidth - 3); }
+
+function foreheadY(x) {
+  const photoX = (x - paddle) / headWidth + headAnchor;
+  if (photoX < foreheadProfile[0][0]) return null;
+  for (let i = 1; i < foreheadProfile.length; i++) {
+    const [left, leftY] = foreheadProfile[i - 1];
+    const [right, rightY] = foreheadProfile[i];
+    if (photoX <= right) {
+      const height = leftY + (rightY - leftY) * (photoX - left) / (right - left);
+      return headTop + height * headHeight;
+    }
+  }
+  return null;
+}
 
 function chirp(from, to, duration = .12, volume = .055) {
   const Audio = window.AudioContext || window.webkitAudioContext;
@@ -119,7 +141,7 @@ function launch() {
   }
   if (mode !== 'paused') {
     const vx = paddle > width / 2 ? -138 : 138;
-    balls = [{ x: paddle, y: paddleY - 24, vx, vy: -351, spin: 0 }];
+    balls = [{ x: paddle, y: foreheadY(paddle) - 24, vx, vy: -351, spin: 0 }];
     updateHud();
   }
   setMode('playing');
@@ -191,16 +213,17 @@ function step(dt) {
       ball.y = ballRadius;
       ball.vy = Math.abs(ball.vy);
     }
-    if (ball.vy > 0 && previousY + ballRadius <= paddleY && ball.y + ballRadius >= paddleY &&
-        Math.abs(ball.x - paddle) <= paddleWidth / 2 + ballRadius * .65) {
-      const angle = clamp((ball.x - paddle) / (paddleWidth / 2), -1, 1) * 1.02;
+    const impactY = ball.vy > 0 ? foreheadY(ball.x) : null;
+    if (impactY !== null && ball.y + ballRadius >= impactY &&
+        previousY + ballRadius <= (foreheadY(previousX) ?? impactY)) {
+      const angle = clamp((ball.x - paddle) / foreheadHalfWidth, -1, 1) * 1.02;
       const speed = Math.min(480, Math.max(365, Math.hypot(ball.vx, ball.vy) + 9));
       ball.x = clamp(ball.x, ballRadius, width - ballRadius);
-      ball.y = paddleY - ballRadius - .5;
+      ball.y = impactY - ballRadius - .5;
       ball.vx = Math.sin(angle) * speed;
       if (Math.abs(ball.vx) < 62) ball.vx = ball.vx < 0 ? -62 : 62;
       ball.vy = -Math.cos(angle) * speed;
-      scatter(ball.x, paddleY, '#efff99', 6);
+      scatter(ball.x, impactY, '#ffd2a6', 7);
       chirp(330, 530, .09, .045);
     }
     for (const tile of tiles) {
@@ -304,20 +327,11 @@ function drawBall(ball) {
 }
 
 function drawPaddle() {
-  const photoWidth = paddleWidth + 12;
+  if (!paddlePhoto.complete || !paddlePhoto.naturalWidth) return;
   ctx.save();
-  ctx.shadowColor = '#dbf77998';
-  ctx.shadowBlur = 15;
-  if (paddlePhoto.complete && paddlePhoto.naturalWidth) {
-    ctx.drawImage(paddlePhoto, paddle - photoWidth / 2, paddleY - 10, photoWidth, 113);
-  }
-  ctx.lineCap = 'round';
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = '#e6ff93';
-  ctx.beginPath();
-  ctx.moveTo(paddle - paddleWidth / 2 + 5, paddleY + 8);
-  ctx.quadraticCurveTo(paddle, paddleY - 29, paddle + paddleWidth / 2 - 5, paddleY + 8);
-  ctx.stroke();
+  ctx.shadowColor = '#df93c75c';
+  ctx.shadowBlur = 12;
+  ctx.drawImage(paddlePhoto, paddle - headWidth * headAnchor, headTop, headWidth, headHeight);
   ctx.restore();
 }
 
@@ -333,12 +347,10 @@ function draw() {
     for (let x = 12; x < width; x += 16) ctx.fillRect(x, y, 1.4, 1.4);
   }
   for (const tile of tiles) if (tile.alive) drawTile(tile);
-  ctx.fillStyle = '#e6ff9323';
-  ctx.fillRect(0, paddleY, width, 1);
   drawPaddle();
   if (balls.length) {
     for (const ball of balls) drawBall(ball);
-  } else if (mode !== 'won') drawBall({ x: paddle, y: paddleY - 29, spin: 0 });
+  } else if (mode !== 'won') drawBall({ x: paddle, y: foreheadY(paddle) - 24, spin: 0 });
   for (const p of particles) {
     ctx.globalAlpha = clamp(p.life * 2.4, 0, 1);
     ctx.fillStyle = p.color;
